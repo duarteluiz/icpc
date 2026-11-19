@@ -22,6 +22,9 @@ jobs:
         working-directory: apps/web
       - run: npm run build
         working-directory: apps/web
+      - name: Validate WhatsApp and Open Graph metadata
+        run: node tests/social-meta.mjs
+        working-directory: apps/web
 
   docker-path-smoke:
     runs-on: ubuntu-latest
