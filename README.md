@@ -7,10 +7,8 @@ Projeto de redesenho da ICPC, inspirado nas melhores práticas de comunicação 
 ## Como apresentar no computador
 
 ```bash
-cp .env.example .env
-# Definir POSTGRES_PASSWORD com valor próprio no ficheiro .env
-
-docker compose up --build -d
+bash start.sh
+# O script cria .env com palavra-passe aleatória, inicia Docker e mostra o URL
 # Abrir http://localhost:18089
 ```
 
