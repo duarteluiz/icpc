@@ -22,3 +22,43 @@ jobs:
         working-directory: apps/web
       - run: npm run build
         working-directory: apps/web
+
+  docker-path-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create isolated demo configuration
+        run: |
+          cp .env.example .env
+          sed -i "s/CHANGE_ME_BEFORE_ANY_PUBLIC_USE/$(openssl rand -hex 24)/" .env
+      - name: Build and start all services
+        run: docker compose up --build --wait -d
+      - name: Verify mounted /icpc/ path, assets and API
+        run: |
+          python - <<'PY'
+          import json
+          import re
+          from urllib.request import urlopen
+          base = "http://127.0.0.1:18089"
+          with urlopen(base + "/icpc/", timeout=15) as r:
+              html = r.read().decode("utf-8")
+              assert r.status == 200
+          assets = re.findall(r'/icpc/assets/[^"\s]+\.(?:js|css)', html)
+          assert assets, "The build must generate /icpc/assets/ URLs"
+          for asset in assets:
+              with urlopen(base + asset, timeout=15) as r:
+                  assert r.status == 200, asset
+                  assert r.headers.get_content_type() in (
+                      "text/javascript", "application/javascript", "text/css"
+                  ), asset
+          with urlopen(base + "/icpc/api/health", timeout=15) as r:
+              body = json.load(r)
+              assert body["status"] == "ok"
+          print("OK: /icpc/ + static assets + /icpc/api/health")
+          PY
+      - name: Container logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
