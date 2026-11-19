@@ -1,6 +1,20 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
+import { storyByLocale } from './i18n.js';
 import { ArrowRight, ArrowUpRight, BookOpen, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Church, Clock3, FileText, HeartHandshake, Home, LockKeyhole, MapPin, Menu, MessageCircle, PenLine, Plus, Search, ShieldCheck, Users, Video, X, LogOut, Settings, PlayCircle, Send, Leaf, CircleHelp, PanelLeftClose } from 'lucide-vue-next';
+
+const languageChoices = ['pt-PT','en','es'];
+const queryLanguage = new URLSearchParams(window.location.search).get('lang');
+const savedLanguage = window.localStorage.getItem('icpc-language');
+const locale = ref(languageChoices.includes(queryLanguage) ? queryLanguage : languageChoices.includes(savedLanguage) ? savedLanguage : 'pt-PT');
+const story = computed(() => storyByLocale[locale.value] || storyByLocale['pt-PT']);
+watch(locale, (lang) => {
+  document.documentElement.lang = lang;
+  window.localStorage.setItem('icpc-language', lang);
+  const url = new URL(window.location.href);
+  url.searchParams.set('lang',lang);
+  history.replaceState(history.state,'',url.pathname+url.search+url.hash);
+}, { immediate: true });
 
 const view = ref('inicio');
 const mobileOpen = ref(false);
@@ -79,7 +93,7 @@ function setEditor(kind) { editorKind.value=kind; dashboardTab.value='editor'; }
         <span class="brand-copy"><strong>ICPC</strong><small>IGREJA CRISTÃ PRESBITERIANA<br>DA COVILHÃ</small></span>
       </button>
       <nav class="desktop-nav" aria-label="Navegação principal"><button v-for="s in sections" :key="s.key" :class="['nav-link',{active:view===s.key}]" @click="go(s.key)">{{s.title}}</button></nav>
-      <div class="header-actions"><button class="access-btn" @click="showAccess=true"><LockKeyhole :size="15"/> {{role==='visitante'?'Área reservada':roleLabel}} <ArrowUpRight :size="15"/></button><button class="hamburger" :aria-expanded="mobileOpen" aria-label="Abrir menu" @click="mobileOpen=!mobileOpen"><X v-if="mobileOpen"/><Menu v-else/></button></div>
+      <div class="header-actions"><label class="locale-control"><span class="sr-only">Idioma do site / Website language / Idioma del sitio</span><select v-model="locale" aria-label="Idioma do site / Website language / Idioma del sitio"><option value="pt-PT">PT</option><option value="en">EN</option><option value="es">ES</option></select></label><button class="access-btn" @click="showAccess=true"><LockKeyhole :size="15"/> {{role==='visitante'?'Área reservada':roleLabel}} <ArrowUpRight :size="15"/></button><button class="hamburger" :aria-expanded="mobileOpen" aria-label="Abrir menu" @click="mobileOpen=!mobileOpen"><X v-if="mobileOpen"/><Menu v-else/></button></div>
     </header>
     <nav v-if="mobileOpen" class="mobile-nav" aria-label="Navegação móvel"><button v-for="s in sections" :key="s.key" @click="go(s.key)">{{s.title}} <ArrowRight :size="16"/></button><button v-if="canManage" @click="go('dashboard')">Painel de gestão <ArrowRight :size="16"/></button></nav>
 
@@ -96,7 +110,33 @@ function setEditor(kind) { editorKind.value=kind; dashboardTab.value='editor'; }
         <section class="closing-banner content-width"><div><span class="eyebrow light">A NOSSA PORTA ESTÁ ABERTA</span><h2>Será um prazer<br><em>recebê-lo.</em></h2></div><button class="primary-light" @click="go('agenda')">Preparar a minha visita <ArrowRight :size="18"/></button></section>
       </template>
 
-      <template v-else-if="view==='sobre'"><section class="page-hero"><div class="content-width"><div class="eyebrow"><span class="line"></span> CONHEÇA A ICPC</div><h1>Uma história de <em>fé e comunhão.</em></h1><p>A Igreja Cristã Presbiteriana da Covilhã é uma comunidade de tradição reformada, comprometida com a Escritura, a adoração e a vida comunitária.</p></div></section><section class="content-width prose-grid section"><article class="prose-card"><span class="eyebrow">A NOSSA IDENTIDADE</span><h2>Doutrina e tradição</h2><p>Somos uma igreja reformada, conservadora e confessional. A igreja apresenta a Confissão de Fé de Westminster como referência doutrinária, com o culto centrado na Palavra e na adoração ao Senhor.</p><p>Para a versão definitiva, o texto doutrinário será revisto e aprovado pela liderança pastoral.</p></article><article class="prose-card light-card"><span class="eyebrow">A NOSSA CAMINHADA</span><h2>Na Covilhã desde o início</h2><p>De pequenos encontros de oração a uma comunidade organizada. Em <strong>15 de junho de 2025</strong>, a congregação foi organizada como igreja pela Igreja Cristã Presbiteriana de Portugal.</p><p>Este percurso continua a crescer através da oração, do ensino bíblico e da comunhão.</p></article></section><section class="content-width section leadership"><div class="eyebrow"><span class="line"></span> SERVIÇO E LIDERANÇA</div><h2>Pessoas ao serviço<br><em>da comunidade.</em></h2><div class="leadership-grid"><div><h3 class="leadership-title">Conselho de Presbíteros</h3><strong>Rev. Luiz AC Bueno</strong><span>Pb. André Rios de Freitas</span><span>Pb. Geraldo Cangondo</span></div><div><h3 class="leadership-title">Junta Diaconal</h3><strong>Dc. J. Patrício da Silva</strong><span>Dc. Isaque Oliveira</span><span>Dc. Ivan Azevedo</span><span>Dc. Leandro Atallah</span><span>Dc. Hagamenon Nicolau</span></div></div><p class="source-note">Dados institucionais recolhidos do site da ICPC. Confirmar antes da publicação final.</p></section></template>
+      <template v-else-if="view==='sobre'"><section class="page-hero"><div class="content-width"><div class="eyebrow"><span class="line"></span> CONHEÇA A ICPC</div><h1>Uma história de <em>fé e comunhão.</em></h1><p>A Igreja Cristã Presbiteriana da Covilhã é uma comunidade de tradição reformada, comprometida com a Escritura, a adoração e a vida comunitária.</p></div></section><section class="content-width prose-grid section about-content">
+  <article class="prose-card">
+    <span class="eyebrow">{{story.identity}}</span>
+    <h2>{{story.doctrineTitle}}</h2>
+    <p>{{story.doctrineIntro}}</p>
+    <p>{{story.doctrineWorship}}</p>
+    <h3 class="story-subtitle">{{story.worshipTitle}}</h3>
+    <ol class="worship-list"><li v-for="item in story.worship" :key="item">{{item}}</li></ol>
+  </article>
+  <article class="prose-card light-card">
+    <span class="eyebrow">{{story.historyEyebrow}}</span>
+    <h2>{{story.historyTitle}}</h2>
+    <p v-for="(paragraph,i) in story.historyParagraphs" :key="i">{{paragraph}}</p>
+  </article>
+</section>
+<figure class="content-width story-photo">
+  <img src="https://www.presbiterianos-covilha.pt/assets/foto_igreja.jpg" :alt="story.historyPhoto" width="1000" height="462" loading="lazy" decoding="async" referrerpolicy="no-referrer">
+  <figcaption>{{story.photoCredit}} · <a href="https://www.presbiterianos-covilha.pt/about.htm" target="_blank" rel="noopener noreferrer">{{story.historySource}}</a></figcaption>
+</figure>
+<section class="content-width section leadership">
+  <div class="eyebrow"><span class="line"></span> {{story.leadershipEyebrow}}</div>
+  <h2>{{story.leadershipTitle}}</h2>
+  <div class="leadership-grid">
+    <div><h3 class="leadership-title">{{story.presbytery}}</h3><strong>Rev. Luiz AC Bueno</strong><span>Pb. André Rios de Freitas</span><span>Pb. Geraldo Cangondo</span></div>
+    <div><h3 class="leadership-title">{{story.diaconate}}</h3><strong>Dc. J. Patrício da Silva</strong><span>Dc. Isaque Oliveira</span><span>Dc. Ivan Azevedo</span><span>Dc. Leandro Atallah</span><span>Dc. Hagamenon Nicolau</span></div>
+  </div>
+  <p class="source-note">{{story.peopleSource}}</p></section></template>
 
       <template v-else-if="view==='sermoes'"><section class="page-hero"><div class="content-width"><div class="eyebrow"><span class="line"></span> ENSINO E PREGAÇÃO</div><h1>A Palavra que <em>transforma.</em></h1><p>Explore mensagens e séries bíblicas. As entradas abaixo são exemplos de como a biblioteca poderá funcionar.</p></div></section><section class="content-width section library"><div class="library-toolbar"><label class="searchbox"><Search :size="20"/><input type="search" v-model="searchTerm" placeholder="Pesquisar passagem, tema ou mensagem..."/></label><label class="filterbox">Tema <select v-model="topic"><option>Todos</option><option>Epístola de Tiago</option><option>Vida cristã</option><option>Igreja e comunhão</option></select><ChevronDown :size="16"/></label></div><div class="sermon-grid"><article v-for="s in filteredSermons" :key="s.id" class="sermon-card"><div :class="['sermon-cover',s.color]"><BookOpen :size="62" :stroke-width="1"/><span class="cover-top">ICPC · BIBLIOTECA</span><span class="cover-demo">DEMONSTRAÇÃO</span></div><div class="sermon-meta">{{s.tag}} · DEMO</div><h3>{{s.title}}</h3><p>{{s.passage}}</p><button class="card-bottom" @click="showToast('O vídeo/áudio real será integrado após autorização da igreja.')">Ver detalhe <ArrowUpRight :size="16"/></button></article></div><div v-if="filteredSermons.length===0" class="empty-state">Nenhum conteúdo encontrado para esta pesquisa.</div></section></template>
 
