@@ -1,0 +1,37 @@
+name: icpc-demo
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-icpc_demo}
+      POSTGRES_USER: ${POSTGRES_USER:-icpc_demo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-demo_only_change_me}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-icpc_demo} -d ${POSTGRES_DB:-icpc_demo}"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+    networks: [internal]
+  api:
+    build: ./services/api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-icpc_demo}:${POSTGRES_PASSWORD:-demo_only_change_me}@db:5432/${POSTGRES_DB:-icpc_demo}
+    depends_on:
+      db: {condition: service_healthy}
+    networks: [internal]
+  web:
+    build: ./apps/web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_PORT:-18089}:80"
+    depends_on:
+      api: {condition: service_healthy}
+    networks: [internal]
+networks:
+  internal: {}
+volumes:
+  pgdata: {}
